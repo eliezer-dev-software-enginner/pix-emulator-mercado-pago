@@ -1,0 +1,49 @@
+@baseUrl = http://localhost:3001
+@paymentId = SUBSTITUA_PELO_ID_RETORNADO
+
+
+### Info / health check
+GET {{baseUrl}}/ HTTP/1.1
+
+
+### ─── PAGAMENTOS (espelham a API do MP) ──────────────────────────────────────
+
+### Criar pagamento
+POST {{baseUrl}}/v1/payments HTTP/1.1
+Content-Type: application/json
+
+{
+  "transaction_amount": 29.90,
+  "description": "ROM - Super Mario World",
+  "external_reference": "user123_rom456",
+  "notification_url": "http://localhost:3000/api/checkout/webhook",
+  "payer": {
+    "email": "comprador@pregogames.com",
+    "first_name": "João",
+    "last_name": "Silva"
+  },
+  "metadata": {
+    "userId": "user123",
+    "romId": "rom456"
+  }
+}
+
+
+### Consultar pagamento por ID
+GET {{baseUrl}}/v1/payments/{{paymentId}} HTTP/1.1
+
+
+### Consultar o ID de teste do MP (sempre retorna approved)
+GET {{baseUrl}}/v1/payments/123456 HTTP/1.1
+
+
+### ─── SIMULAÇÃO ──────────────────────────────────────────────────────────────
+
+### Simular pagamento do usuário (muda status para approved e dispara webhook)
+POST {{baseUrl}}/simulate/pay/{{paymentId}} HTTP/1.1
+
+
+### Listar todos os pagamentos em memória
+GET {{baseUrl}}/simulate/payments HTTP/1.1
+
+
