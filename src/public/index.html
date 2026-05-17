@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pix Emulator</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;800&display=swap');
+
+    :root {
+      --bg:       #0a0a0a;
+      --surface:  #111111;
+      --border:   #1f1f1f;
+      --green:    #00e676;
+      --yellow:   #ffd600;
+      --muted:    #444;
+      --text:     #e8e8e8;
+      --text-dim: #666;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: .05em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-dot {
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .4; transform: scale(.7); }
+    }
+
+    .header-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* ── Layout ── */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 32px;
+    }
+
+    /* ── Section title ── */
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+
+    /* ── Empty state ── */
+    #empty {
+      border: 1px dashed var(--border);
+      border-radius: 4px;
+      padding: 60px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 13px;
+      line-height: 2;
+    }
+
+    /* ── Payment card ── */
+    .payment-card {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 20px 24px;
+      margin-bottom: 10px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 20px;
+      transition: border-color .15s;
+      animation: slideIn .2s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .payment-card:hover { border-color: #2a2a2a; }
+
+    .payment-card.approved {
+      border-color: #0d2a1a;
+      background: #0a1a10;
+    }
+
+    /* Badge */
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 2px;
+      white-space: nowrap;
+    }
+
+    .badge.pending  { background: #1a1500; color: var(--yellow); border: 1px solid #3a3000; }
+    .badge.approved { background: #0d2a1a; color: var(--green);  border: 1px solid #0d4a2a; }
+
+    /* Info */
+    .payment-info { min-width: 0; }
+
+    .payment-id {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .payment-desc {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .payment-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* Actions */
+    .payment-actions { display: flex; gap: 8px; align-items: center; }
+
+    .btn-pay {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: 2px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      white-space: nowrap;
+    }
+
+    .btn-pay:hover   { opacity: .85; }
+    .btn-pay:active  { transform: scale(.97); }
+    .btn-pay:disabled {
+      background: var(--muted);
+      color: #222;
+      cursor: not-allowed;
+      opacity: 1;
+    }
+
+    .btn-delete {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 2px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+      line-height: 1;
+    }
+
+    .btn-delete:hover { border-color: #c00; color: #f44; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px 20px;
+      font-size: 12px;
+      color: var(--text);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .2s, transform .2s;
+      pointer-events: none;
+      z-index: 100;
+      max-width: 320px;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #toast.ok  { border-color: var(--green); color: var(--green); }
+    #toast.err { border-color: #f44;         color: #f44;         }
+
+    /* ── Refresh button ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .btn-refresh {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 2px;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+      letter-spacing: .05em;
+    }
+
+    .btn-refresh:hover { border-color: #333; color: var(--text); }
+
+    /* ── Amount ── */
+    .amount {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    PIX EMULATOR
+  </div>
+  <div class="header-meta">Mercado Pago · local</div>
+</header>
+
+<main>
+  <div class="toolbar">
+    <div class="section-title">Pagamentos em memória</div>
+    <button class="btn-refresh" onclick="load()">↻ atualizar</button>
+  </div>
+
+  <div id="empty" style="display:none">
+    Nenhum pagamento criado ainda.<br/>
+    Faça um <code>POST /v1/payments</code> para começar.
+  </div>
+
+  <div id="list"></div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+  const BASE = '';
+
+  function fmt(value) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  }
+
+  function timeAgo(dateStr) {
+    const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+    if (diff < 60)  return `${diff}s atrás`;
+    if (diff < 3600) return `${Math.floor(diff/60)}min atrás`;
+    return `${Math.floor(diff/3600)}h atrás`;
+  }
+
+  function toast(msg, type = 'ok') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `show ${type}`;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.className = '', 3000);
+  }
+
+  async function load() {
+    const res  = await fetch(`${BASE}/simulate/payments`);
+    const data = await res.json();
+    const list = document.getElementById('list');
+    const empty = document.getElementById('empty');
+
+    if (!data.payments.length) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+
+    // Sort: pending first, then by createdAt desc
+    const sorted = [...data.payments].sort((a, b) => {
+      if (a.status === b.status) return new Date(b.createdAt) - new Date(a.createdAt);
+      return a.status === 'pending' ? -1 : 1;
+    });
+
+    list.innerHTML = sorted.map(p => `
+      <div class="payment-card ${p.status}" id="card-${p.id}">
+        <span class="badge ${p.status}">${p.status === 'pending' ? 'pendente' : 'aprovado'}</span>
+
+        <div class="payment-info">
+          <div class="payment-id">${p.id}</div>
+          <div class="payment-desc">${p.description ?? '—'}</div>
+          <div class="payment-meta">${fmt(p.amount)} · ${timeAgo(p.createdAt)}</div>
+        </div>
+
+        <div class="payment-actions">
+          <button
+            class="btn-pay"
+            onclick="pay('${p.id}')"
+            id="btn-${p.id}"
+            ${p.status === 'approved' ? 'disabled' : ''}
+          >${p.status === 'approved' ? '✓ pago' : '▶ pagar'}</button>
+
+          <button class="btn-delete" onclick="del('${p.id}')" title="Remover">×</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function pay(id) {
+    const btn = document.getElementById(`btn-${id}`);
+    btn.disabled = true;
+    btn.textContent = '…';
+
+    try {
+      const res = await fetch(`${BASE}/simulate/pay/${id}`, { method: 'POST' });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error ?? 'Erro');
+
+      toast(`✓ Pagamento ${id.slice(0,8)}… aprovado — webhook disparado`);
+      setTimeout(load, 400);
+    } catch(e) {
+      toast(e.message, 'err');
+      btn.disabled = false;
+      btn.textContent = '▶ pagar';
+    }
+  }
+
+  async function del(id) {
+    try {
+      const res = await fetch(`${BASE}/simulate/payments/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Erro ao remover');
+      toast(`Pagamento removido`);
+      document.getElementById(`card-${id}`)?.remove();
+      const list = document.getElementById('list');
+      if (!list.children.length) {
+        document.getElementById('empty').style.display = 'block';
+      }
+    } catch(e) {
+      toast(e.message, 'err');
+    }
+  }
+
+  // Auto-refresh a cada 4s
+  load();
+  setInterval(load, 4000);
+</script>
+
+</body>
+</html>
