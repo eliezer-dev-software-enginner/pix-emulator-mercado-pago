@@ -1,24 +1,34 @@
-import { Router } from "express";
-import { randomUUID } from "crypto";
-import { payments } from "../store";
-import { fireWebhook } from "../webhook";
+import { randomUUID } from 'crypto';
+import { Router } from 'express';
+import { payments } from '../store';
+import { fireWebhook } from '../webhook';
+import fs from 'fs';
+import path from 'path';
+var qrCodePath = path.join(process.cwd(), 'src', 'public', 'qrcode.png');
+var qrCodeBase64 = fs.existsSync(qrCodePath)
+    ? "".concat(fs.readFileSync(qrCodePath, { encoding: 'base64' }))
+    : '';
+console.log(qrCodeBase64);
+//------------
 var paymentRouter = Router();
-var WEBHOOK_DELAY_MS = parseInt(process.env.WEBHOOK_DELAY_MS || "2000", 10);
+var WEBHOOK_DELAY_MS = parseInt(process.env.WEBHOOK_DELAY_MS || '2000', 10);
 // ── POST /v1/payments ─────────────────────────────────────────────────────────
 // Cria um pagamento. Dispara webhook após delay (simula notificação assíncrona do MP).
-paymentRouter.post("/", function (req, res) {
+paymentRouter.post('/', function (req, res) {
     var _a, _b, _c, _d;
     var body = req.body;
     var id = randomUUID();
     var payment = {
         id: id,
-        status: "pending",
+        status: 'pending',
         amount: (_b = (_a = body.transaction_amount) !== null && _a !== void 0 ? _a : body.value) !== null && _b !== void 0 ? _b : 1,
-        description: (_c = body.description) !== null && _c !== void 0 ? _c : "Pagamento Pix",
+        description: (_c = body.description) !== null && _c !== void 0 ? _c : 'Pagamento Pix',
         externalReference: (_d = body.external_reference) !== null && _d !== void 0 ? _d : body.externalRef,
         notificationUrl: body.notification_url, // ← igual ao MP real
         qrCode: "00020126580014br.gov.bcb.pix0136fake-key-".concat(id, "52040000530398654041.005802BR5913PIX EMULATOR6009SAO PAULO6304ABCD"),
-        qrCodeBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        qrCodeBase64: 
+        //'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        qrCodeBase64,
         createdAt: new Date(),
         updatedAt: new Date(),
     };
@@ -47,16 +57,16 @@ paymentRouter.post("/", function (req, res) {
 });
 // ── GET /v1/payments/:id ──────────────────────────────────────────────────────
 // Consultado pelo seu webhook handler via PixService.getPaymentById()
-paymentRouter.get("/:id", function (req, res) {
+paymentRouter.get('/:id', function (req, res) {
     var id = req.params.id;
     // ID de teste do Mercado Pago — seu código já trata esse caso
-    if (id === "123456") {
-        res.json({ id: "123456", status: "approved", status_detail: "accredited" });
+    if (id === '123456') {
+        res.json({ id: '123456', status: 'approved', status_detail: 'accredited' });
         return;
     }
     var payment = payments.get(id);
     if (!payment) {
-        res.status(404).json({ error: "Pagamento não encontrado", id: id });
+        res.status(404).json({ error: 'Pagamento não encontrado', id: id });
         return;
     }
     console.log("\n\uD83D\uDD0D Consulta pagamento: ".concat(id, " | status: ").concat(payment.status));
