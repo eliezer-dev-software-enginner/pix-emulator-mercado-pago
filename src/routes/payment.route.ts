@@ -12,8 +12,6 @@ const qrCodeBase64 = fs.existsSync(qrCodePath)
   ? `${fs.readFileSync(qrCodePath, { encoding: 'base64' })}`
   : '';
 
-console.log(qrCodeBase64);
-
 //------------
 
 const paymentRouter = Router();
