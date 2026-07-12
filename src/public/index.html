@@ -122,6 +122,11 @@
       background: #0a1a10;
     }
 
+    .payment-card.expired {
+      border-color: #2a1515;
+      background: #1a0a0a;
+    }
+
     /* Badge */
     .badge {
       font-size: 10px;
@@ -135,6 +140,7 @@
 
     .badge.pending  { background: #1a1500; color: var(--yellow); border: 1px solid #3a3000; }
     .badge.approved { background: #0d2a1a; color: var(--green);  border: 1px solid #0d4a2a; }
+    .badge.expired  { background: #1a0a0a; color: #f44;          border: 1px solid #3a1a1a; }
 
     /* Info */
     .payment-info { min-width: 0; }
@@ -187,6 +193,32 @@
     .btn-pay:disabled {
       background: var(--muted);
       color: #222;
+      cursor: not-allowed;
+      opacity: 1;
+    }
+
+    .btn-expire {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: none;
+      color: #f44;
+      border: 1px solid #3a1a1a;
+      border-radius: 2px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      white-space: nowrap;
+    }
+
+    .btn-expire:hover   { opacity: .85; }
+    .btn-expire:active  { transform: scale(.97); }
+    .btn-expire:disabled {
+      background: var(--muted);
+      color: #222;
+      border-color: var(--border);
       cursor: not-allowed;
       opacity: 1;
     }
@@ -331,15 +363,18 @@
 
     empty.style.display = 'none';
 
-    // Sort: pending first, then by createdAt desc
+    // Sort: pending first, then approved, then expired; within each group by createdAt desc
+    const statusOrder = { pending: 0, approved: 1, expired: 2 };
     const sorted = [...data.payments].sort((a, b) => {
-      if (a.status === b.status) return new Date(b.createdAt) - new Date(a.createdAt);
-      return a.status === 'pending' ? -1 : 1;
+      const sa = statusOrder[a.status] ?? 3;
+      const sb = statusOrder[b.status] ?? 3;
+      if (sa !== sb) return sa - sb;
+      return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
     list.innerHTML = sorted.map(p => `
       <div class="payment-card ${p.status}" id="card-${p.id}">
-        <span class="badge ${p.status}">${p.status === 'pending' ? 'pendente' : 'aprovado'}</span>
+        <span class="badge ${p.status}">${p.status === 'pending' ? 'pendente' : p.status === 'approved' ? 'aprovado' : 'expirado'}</span>
 
         <div class="payment-info">
           <div class="payment-id">${p.id}</div>
@@ -348,12 +383,14 @@
         </div>
 
         <div class="payment-actions">
-          <button
-            class="btn-pay"
-            onclick="pay('${p.id}')"
-            id="btn-${p.id}"
-            ${p.status === 'approved' ? 'disabled' : ''}
-          >${p.status === 'approved' ? '✓ pago' : '▶ pagar'}</button>
+          ${p.status === 'pending' ? `
+            <button class="btn-pay" onclick="pay('${p.id}')" id="btn-${p.id}">▶ pagar</button>
+            <button class="btn-expire" onclick="expire('${p.id}')" id="btn-exp-${p.id}">⏰ expirar</button>
+          ` : p.status === 'approved' ? `
+            <button class="btn-pay" disabled id="btn-${p.id}">✓ pago</button>
+          ` : `
+            <button class="btn-expire" disabled id="btn-exp-${p.id}">⏰ expirado</button>
+          `}
 
           <button class="btn-delete" onclick="del('${p.id}')" title="Remover">×</button>
         </div>
@@ -378,6 +415,26 @@
       toast(e.message, 'err');
       btn.disabled = false;
       btn.textContent = '▶ pagar';
+    }
+  }
+
+  async function expire(id) {
+    const btn = document.getElementById(`btn-exp-${id}`);
+    btn.disabled = true;
+    btn.textContent = '…';
+
+    try {
+      const res = await fetch(`${BASE}/simulate/expire/${id}`, { method: 'POST' });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error ?? 'Erro');
+
+      toast(`⏰ Pagamento ${id.slice(0,8)}… expirado — webhook disparado`);
+      setTimeout(load, 400);
+    } catch(e) {
+      toast(e.message, 'err');
+      btn.disabled = false;
+      btn.textContent = '⏰ expirar';
     }
   }
 

@@ -1,5 +1,4 @@
-// só cobre pendente e aprovado
-export type PaymentStatus = "pending" | "approved";
+export type PaymentStatus = "pending" | "approved" | "expired";
 
 export interface Payment {
   id: string;
