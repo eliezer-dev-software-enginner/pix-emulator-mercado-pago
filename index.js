@@ -1,5 +1,5 @@
-const express = require("express");
-const { v4: uuidv4 } = require("uuid");
+const express = require('express');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 app.use(express.json());
@@ -13,10 +13,10 @@ const PORT = process.env.PORT || 3333;
 // Webhook URL: where YOUR app listens (e.g. your Next.js /api/checkout/webhook)
 // Override with env var: WEBHOOK_URL=https://your-app.com/api/checkout/webhook
 const WEBHOOK_URL =
-  process.env.WEBHOOK_URL || "http://localhost:3000/api/checkout/webhook";
+  process.env.WEBHOOK_URL || 'http://localhost:3000/api/checkout/webhook';
 
 // Delay in ms before firing the webhook after a payment is created (simulates async notification)
-const WEBHOOK_DELAY_MS = parseInt(process.env.WEBHOOK_DELAY_MS || "2000", 10);
+const WEBHOOK_DELAY_MS = parseInt(process.env.WEBHOOK_DELAY_MS || '2000', 10);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,14 +30,14 @@ function makeFakeQrCodeBase64(paymentId) {
 }
 
 async function fireWebhook(paymentId) {
-  const payload = { action: "payment.updated", data: { id: paymentId } };
+  const payload = { action: 'payment.updated', data: { id: paymentId } };
   console.log(`\n🔔 Firing webhook → ${WEBHOOK_URL}`);
-  console.log("   Payload:", JSON.stringify(payload));
+  console.log('   Payload:', JSON.stringify(payload));
 
   try {
     const res = await fetch(WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     console.log(`   ✅ Webhook response: ${res.status}`);
@@ -49,33 +49,34 @@ async function fireWebhook(paymentId) {
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 // Health check
-app.get("/", (req, res) => {
+app.get('/', (req, res) => {
   res.json({
-    service: "Mercado Pago Pix Emulator",
-    status: "running",
+    service: 'Mercado Pago Pix Emulator',
+    status: 'running',
     paymentsInMemory: payments.size,
     webhookUrl: WEBHOOK_URL,
     endpoints: {
-      createPayment: "POST /v1/payments",
-      getPayment: "GET  /v1/payments/:id",
-      payNow: "POST /pay/:id",
-      listAll: "GET  /payments",
+      createPayment: 'POST /v1/payments',
+      getPayment: 'GET  /v1/payments/:id',
+      payNow: 'POST /pay/:id',
+      listAll: 'GET  /payments',
     },
   });
 });
 
 // ── 1. Create payment (mirrors real MP API) ───────────────────────────────────
-app.post("/v1/payments", (req, res) => {
+app.post('/v1/payments', (req, res) => {
   const body = req.body;
-  const paymentId = String(Date.now()).slice(-8) + Math.floor(Math.random() * 1000);
+  const paymentId =
+    String(Date.now()).slice(-8) + Math.floor(Math.random() * 1000);
 
   const payment = {
     id: paymentId,
-    status: "pending",
-    status_detail: "pending_waiting_payment",
-    payment_method_id: "pix",
+    status: 'pending',
+    status_detail: 'pending_waiting_payment',
+    payment_method_id: 'pix',
     transaction_amount: body.transaction_amount ?? body.value ?? 1,
-    description: body.description ?? "Pagamento Pix",
+    description: body.description ?? 'Pagamento Pix',
     external_reference: body.external_reference ?? body.externalRef ?? null,
     payer: body.payer ?? {},
     metadata: body.metadata ?? {},
@@ -100,17 +101,21 @@ app.post("/v1/payments", (req, res) => {
 });
 
 // ── 2. Get payment by ID (called by your webhook handler via PixService) ──────
-app.get("/v1/payments/:id", (req, res) => {
+app.get('/v1/payments/:id', (req, res) => {
   const { id } = req.params;
 
   // Mercado Pago test ID
-  if (id === "123456") {
-    return res.json({ id: "123456", status: "approved", status_detail: "accredited" });
+  if (id === '123456') {
+    return res.json({
+      id: '123456',
+      status: 'approved',
+      status_detail: 'accredited',
+    });
   }
 
   const payment = payments.get(id);
   if (!payment) {
-    return res.status(404).json({ error: "Payment not found", id });
+    return res.status(404).json({ error: 'Payment not found', id });
   }
 
   console.log(`\n🔍 Get payment: ${id} | status: ${payment.status}`);
@@ -118,20 +123,20 @@ app.get("/v1/payments/:id", (req, res) => {
 });
 
 // ── 3. Simulate "user paid" ───────────────────────────────────────────────────
-app.post("/pay/:id", async (req, res) => {
+app.post('/pay/:id', async (req, res) => {
   const { id } = req.params;
   const payment = payments.get(id);
 
   if (!payment) {
-    return res.status(404).json({ error: "Payment not found", id });
+    return res.status(404).json({ error: 'Payment not found', id });
   }
 
-  if (payment.status === "approved") {
-    return res.status(409).json({ error: "Payment already approved", id });
+  if (payment.status === 'approved') {
+    return res.status(409).json({ error: 'Payment already approved', id });
   }
 
-  payment.status = "approved";
-  payment.status_detail = "accredited";
+  payment.status = 'approved';
+  payment.status_detail = 'accredited';
   payment.updatedAt = new Date().toISOString();
   payments.set(id, payment);
 
@@ -140,11 +145,11 @@ app.post("/pay/:id", async (req, res) => {
   // Fire webhook immediately
   await fireWebhook(id);
 
-  res.json({ success: true, paymentId: id, status: "approved" });
+  res.json({ success: true, paymentId: id, status: 'approved' });
 });
 
 // ── 4. List all payments (debug helper) ───────────────────────────────────────
-app.get("/payments", (req, res) => {
+app.get('/payments', (req, res) => {
   const list = Array.from(payments.values()).map((p) => ({
     id: p.id,
     status: p.status,
@@ -157,9 +162,9 @@ app.get("/payments", (req, res) => {
 });
 
 // ── 5. Delete a payment (reset helper) ────────────────────────────────────────
-app.delete("/payments/:id", (req, res) => {
+app.delete('/payments/:id', (req, res) => {
   const { id } = req.params;
-  if (!payments.has(id)) return res.status(404).json({ error: "Not found" });
+  if (!payments.has(id)) return res.status(404).json({ error: 'Not found' });
   payments.delete(id);
   console.log(`\n🗑️  Payment deleted: ${id}`);
   res.json({ deleted: true, id });
@@ -167,10 +172,12 @@ app.delete("/payments/:id", (req, res) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`\n🟢 Mercado Pago Pix Emulator running on http://localhost:${PORT}`);
+  console.log(
+    `\n🟢 Mercado Pago Pix Emulator running on http://localhost:${PORT}`,
+  );
   console.log(`📡 Webhook will fire to: ${WEBHOOK_URL}`);
   console.log(`⏱️  Webhook delay: ${WEBHOOK_DELAY_MS}ms\n`);
-  console.log("Endpoints:");
+  console.log('Endpoints:');
   console.log(`  POST   /v1/payments       → create payment`);
   console.log(`  GET    /v1/payments/:id   → get payment status`);
   console.log(`  POST   /pay/:id           → simulate user paying`);
